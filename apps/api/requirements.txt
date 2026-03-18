@@ -1,0 +1,28 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+psycopg2-binary==2.9.10
+alembic==1.14.0
+pydantic==2.10.3
+pydantic-settings==2.7.0
+python-dotenv==1.0.1
+python-multipart==0.0.18
+
+# ML / Embeddings
+torch==2.5.1
+torchvision==0.20.1
+ftfy==6.3.1
+regex==2024.11.6
+open-clip-torch==2.29.0
+faiss-cpu==1.9.0.post1
+sentence-transformers==3.3.1
+
+# Media processing
+opencv-python-headless==4.10.0.84
+
+# Utilities
+httpx==0.28.1
+cloudinary==1.41.0
+Pillow==11.0.0
+numpy==1.26.4

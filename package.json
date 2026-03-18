@@ -1,0 +1,12 @@
+{
+  "name": "vibesearch",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev:web": "cd apps/web && npm run dev",
+    "dev:api": "cd apps/api && uvicorn app.main:app --reload --port 8000",
+    "build:web": "cd apps/web && npm run build",
+    "lint": "cd apps/web && npm run lint"
+  }
+}

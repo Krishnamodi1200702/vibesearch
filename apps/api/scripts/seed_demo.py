@@ -10,6 +10,7 @@ Placeholder frame URLs use picsum.photos for free stock thumbnails.
 """
 
 from __future__ import annotations
+from app.services.clip_service import get_clip_service
 
 import asyncio
 import logging
@@ -206,17 +207,10 @@ DEMO_VIDEOS = [
 ]
 
 
-def _generate_scene_embedding(description: str, dim: int = 512) -> np.ndarray:
-    """Generate a synthetic but deterministic embedding from text.
-
-    In production this would use CLIP. For seeding we create a reproducible
-    vector so that FAISS search still returns reasonable-looking results
-    during demos (text queries will use real CLIP at search time).
-    """
-    rng = np.random.RandomState(hash(description) % 2**31)
-    vec = rng.randn(dim).astype(np.float32)
-    vec /= np.linalg.norm(vec)
-    return vec
+def _generate_scene_embedding(description: str) -> np.ndarray:
+    """Generate a real CLIP embedding from scene description."""
+    clip = get_clip_service()
+    return clip.encode_text(description)
 
 
 def _frame_url(video_idx: int, scene_idx: int, frame_idx: int) -> str:

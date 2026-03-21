@@ -25,8 +25,23 @@ export interface Video {
   description: string | null;
   file_url: string;
   duration_seconds: number;
+  scene_count: number;
   status: string;
+  processing_error: string | null;
   created_at: string;
+  processed_at: string | null;
+  thumbnail_url?: string;
+}
+
+export interface VideoDetail extends Video {
+  scenes: Scene[];
+}
+
+export interface VideoUploadResponse {
+  id: string;
+  title: string;
+  status: string;
+  message: string;
 }
 
 export interface SceneFrame {
@@ -69,6 +84,13 @@ export interface SearchResponse {
   took_ms: number;
 }
 
+export interface SearchHistoryItem {
+  id: string;
+  query_text: string;
+  result_count: number;
+  created_at: string;
+}
+
 export interface Favorite {
   id: string;
   scene_id: string;
@@ -85,4 +107,14 @@ export interface HealthCheck {
   status: string;
   env: string;
   faiss_vectors: number;
+}
+
+export interface DashboardStats {
+  total_videos: number;
+  total_scenes: number;
+  total_searches: number;
+  total_favorites: number;
+  videos_processing: number;
+  recent_searches: SearchHistoryItem[];
+  recent_videos: Video[];
 }

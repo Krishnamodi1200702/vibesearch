@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import get_settings
 from app.routers import auth, search, users, videos, favorites
+from app.routers import dashboard
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -21,6 +24,11 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     """Startup: pre-load ML models and FAISS index. Shutdown: cleanup."""
     logger.info("Starting VibeSearch API (env=%s)", settings.env)
+
+    # Ensure data directories exist
+    Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
+    Path(settings.frames_dir).mkdir(parents=True, exist_ok=True)
+    Path(settings.faiss_index_path).parent.mkdir(parents=True, exist_ok=True)
 
     # Pre-load FAISS index (safe if file doesn't exist yet)
     from app.services.faiss_service import get_faiss_service
@@ -43,7 +51,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="VibeSearch API",
     description="AI-powered semantic video scene search",
-    version="0.1.0",
+    version="0.2.0",
     lifespan=lifespan,
 )
 
@@ -56,12 +64,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Static file serving for uploaded videos and extracted frames
+uploads_path = Path(settings.upload_dir)
+frames_path = Path(settings.frames_dir)
+uploads_path.mkdir(parents=True, exist_ok=True)
+frames_path.mkdir(parents=True, exist_ok=True)
+
+app.mount("/static/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
+app.mount("/static/frames", StaticFiles(directory=str(frames_path)), name="frames")
+
 # Routers
 app.include_router(auth.router, prefix="/api")
 app.include_router(search.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 app.include_router(videos.router, prefix="/api")
 app.include_router(favorites.router, prefix="/api")
+app.include_router(dashboard.router, prefix="/api")
 
 
 @app.get("/api/health")

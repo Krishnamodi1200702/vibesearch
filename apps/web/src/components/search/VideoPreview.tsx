@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { resolveMediaUrl } from "@/lib/api";
 import { Play, Pause, X, Volume2, VolumeX, AlertCircle } from "lucide-react";
 
 interface VideoPreviewProps {
@@ -101,7 +102,7 @@ export default function VideoPreview({ videoUrl, startTime, endTime, onClose }: 
       {/* Video element */}
       <video
         ref={videoRef}
-        src={videoUrl}
+        src={resolveMediaUrl(videoUrl)}
         muted={isMuted}
         playsInline
         preload="metadata"

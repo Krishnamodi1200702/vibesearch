@@ -1,4 +1,9 @@
-"""Search service — orchestrates CLIP encoding, FAISS retrieval, reranking, and DB lookup."""
+"""Search service — orchestrates CLIP encoding, FAISS retrieval, reranking, and DB lookup.
+
+Extended with:
+- video_id filtering (search within a single video)
+- Query normalization via query_service
+"""
 
 from __future__ import annotations
 
@@ -15,6 +20,7 @@ from app.schemas import SearchResultItem, SearchResponse
 from app.services.clip_service import get_clip_service
 from app.services.faiss_service import get_faiss_service
 from app.services.reranker_service import get_reranker_service
+from app.services.query_service import normalize_query
 
 logger = logging.getLogger(__name__)
 
@@ -58,23 +64,30 @@ async def search_scenes(
     db: AsyncSession,
     query: str,
     user_id: uuid.UUID | None = None,
+    video_id: uuid.UUID | None = None,
     top_k: int = 10,
     faiss_oversample: int = 3,
 ) -> SearchResponse:
-    """Full search pipeline: encode → retrieve → rerank → return."""
+    """Full search pipeline: normalize → encode → retrieve → filter → rerank → return."""
     t0 = time.time()
 
     clip = get_clip_service()
     faiss_svc = get_faiss_service()
     reranker = get_reranker_service()
 
-    # 1. Encode query with CLIP
-    query_vec = clip.encode_text(query)
+    # 0. Normalize query for better CLIP encoding
+    original_query = query
+    normalized = normalize_query(query)
+    logger.debug("Query normalized: '%s' → '%s'", query, normalized)
 
-    # 2. FAISS retrieval (oversample for reranker)
-    retrieve_k = min(top_k * faiss_oversample, faiss_svc.count) if faiss_svc.count > 0 else 0
+    # 1. Encode normalized query with CLIP
+    query_vec = clip.encode_text(normalized)
+
+    # 2. FAISS retrieval (oversample more if filtering by video to ensure enough candidates)
+    oversample = faiss_oversample * 3 if video_id else faiss_oversample
+    retrieve_k = min(top_k * oversample, faiss_svc.count) if faiss_svc.count > 0 else 0
     if retrieve_k == 0:
-        return SearchResponse(query=query, results=[], total=0, took_ms=0)
+        return SearchResponse(query=original_query, results=[], total=0, took_ms=0)
 
     faiss_results = faiss_svc.search(query_vec, top_k=retrieve_k)
     faiss_ids = [fid for fid, _ in faiss_results]
@@ -86,6 +99,10 @@ async def search_scenes(
         .where(Scene.faiss_vector_id.in_(faiss_ids))
         .options(selectinload(Scene.frames), selectinload(Scene.video))
     )
+    # Apply video_id filter at the DB level
+    if video_id:
+        stmt = stmt.where(Scene.video_id == video_id)
+
     result = await db.execute(stmt)
     scenes = result.scalars().all()
     scene_map = {s.faiss_vector_id: s for s in scenes}
@@ -134,7 +151,7 @@ async def search_scenes(
             end_time_sec=scene.end_time_sec,
             thumbnails=thumb_urls,
             similarity_score=round(score, 4),
-            match_explanation=_generate_explanation(query, scene, video, score),
+            match_explanation=_generate_explanation(original_query, scene, video, score),
             transcript_text=scene.transcript_text,
             is_favorited=scene.id in favorited_scene_ids,
         ))
@@ -143,6 +160,6 @@ async def search_scenes(
 
     # 8. Log query
     if user_id:
-        db.add(SearchQuery(user_id=user_id, query_text=query, result_count=len(results)))
+        db.add(SearchQuery(user_id=user_id, query_text=original_query, result_count=len(results)))
 
-    return SearchResponse(query=query, results=results, total=len(results), took_ms=took_ms)
+    return SearchResponse(query=original_query, results=results, total=len(results), took_ms=took_ms)

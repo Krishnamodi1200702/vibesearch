@@ -6,7 +6,7 @@ import { Heart, Clock, Play, BarChart3, ChevronDown, ChevronUp } from "lucide-re
 import Image from "next/image";
 import type { SearchResultItem } from "@/types";
 import { formatTimestamp, formatScore } from "@/lib/utils";
-import { addFavorite, removeFavoriteByScene } from "@/lib/api";
+import { addFavorite, removeFavoriteByScene, resolveMediaUrl } from "@/lib/api";
 import VideoPreview from "./VideoPreview";
 
 interface ResultCardProps {
@@ -68,7 +68,7 @@ export default function ResultCard({ result, index, userId, onFavoriteToggle }: 
               <div key={i} className="relative flex-1 bg-surface-overlay overflow-hidden">
                 {thumb && !imgErrors.has(i) ? (
                   <Image
-                    src={thumb}
+                    src={resolveMediaUrl(thumb)}
                     alt={`Scene ${result.scene_index + 1} frame ${i + 1}`}
                     fill
                     sizes="(max-width: 768px) 33vw, 200px"

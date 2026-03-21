@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
+import { Film, X } from "lucide-react";
+import Link from "next/link";
 import SearchBar from "@/components/search/SearchBar";
 import ResultGrid from "@/components/search/ResultGrid";
 import { useSearch } from "@/hooks/useSearch";
@@ -11,6 +13,7 @@ import { useAppContext } from "../layout";
 export default function SearchPage() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
+  const videoIdParam = searchParams.get("videoId") || undefined;
   const { userId } = useAppContext();
 
   const {
@@ -25,16 +28,18 @@ export default function SearchPage() {
     hasSearched,
     executeSearch,
     toggleFavorite,
-  } = useSearch({ userId: userId || undefined, initialQuery });
+    videoId,
+  } = useSearch({ userId: userId || undefined, initialQuery, videoId: videoIdParam });
 
-  // Update URL when search happens (without full navigation)
+  // Update URL when search happens
   useEffect(() => {
     if (hasSearched && query) {
       const url = new URL(window.location.href);
       url.searchParams.set("q", query);
+      if (videoId) url.searchParams.set("videoId", videoId);
       window.history.replaceState({}, "", url.toString());
     }
-  }, [hasSearched, query]);
+  }, [hasSearched, query, videoId]);
 
   return (
     <div>
@@ -53,6 +58,30 @@ export default function SearchPage() {
           Describe what you&apos;re looking for — we&apos;ll find the exact scene
         </p>
       </motion.div>
+
+      {/* Video filter banner */}
+      {videoId && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-2xl mx-auto mb-6"
+        >
+          <div className="glass rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm text-white/50">
+              <Film className="w-4 h-4 text-accent-violet" />
+              <span>Searching within a specific video</span>
+            </div>
+            <Link
+              href="/search"
+              className="flex items-center gap-1 text-xs text-accent-violet hover:text-accent-violet/80
+                         transition-colors"
+            >
+              <X className="w-3 h-3" />
+              Clear filter
+            </Link>
+          </div>
+        </motion.div>
+      )}
 
       {/* Search bar */}
       <SearchBar

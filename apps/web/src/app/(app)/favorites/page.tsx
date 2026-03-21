@@ -5,10 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Search, Loader2, Trash2, Clock, Play } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { listFavorites, removeFavorite } from "@/lib/api";
+import { listFavorites, removeFavorite, resolveMediaUrl } from "@/lib/api";
 import { formatTimestamp } from "@/lib/utils";
 import type { Favorite } from "@/types";
 import { useAppContext } from "../layout";
+import VideoPreview from "@/components/search/VideoPreview";
 
 export default function FavoritesPage() {
   const { userId } = useAppContext();
@@ -153,8 +154,10 @@ function FavoriteCard({
   const scene = favorite.scene;
   const video = favorite.video;
   const [imgError, setImgError] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
-  const thumbUrl = scene?.frames?.[0]?.frame_url;
+  const thumbUrl = resolveMediaUrl(scene?.frames?.[0]?.frame_url);
+  const videoUrl = resolveMediaUrl(video?.file_url);
 
   return (
     <motion.div
@@ -167,6 +170,12 @@ function FavoriteCard({
     >
       {/* Thumbnail */}
       <div className="relative h-36 bg-surface-overlay overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowPreview((v) => !v)}
+          className="absolute inset-0 z-10"
+          title={showPreview ? "Hide preview" : "Show preview"}
+        />
         {thumbUrl && !imgError ? (
           <Image
             src={thumbUrl}
@@ -225,6 +234,19 @@ function FavoriteCard({
           Saved {new Date(favorite.created_at).toLocaleDateString()}
         </p>
       </div>
+
+    <AnimatePresence>
+      {showPreview && scene && videoUrl && (
+        <div className="px-4 pb-4">
+          <VideoPreview
+            videoUrl={videoUrl}
+            startTime={scene.start_time_sec}
+            endTime={scene.end_time_sec}
+            onClose={() => setShowPreview(false)}
+          />
+        </div>
+      )}
+    </AnimatePresence>
     </motion.div>
   );
 }

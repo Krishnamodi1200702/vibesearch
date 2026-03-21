@@ -7,6 +7,7 @@ import { search as apiSearch, getSuggestions } from "@/lib/api";
 interface UseSearchOptions {
   userId?: string;
   initialQuery?: string;
+  videoId?: string;
 }
 
 interface UseSearchReturn {
@@ -21,9 +22,10 @@ interface UseSearchReturn {
   hasSearched: boolean;
   executeSearch: (q?: string) => Promise<void>;
   toggleFavorite: (sceneId: string, favorited: boolean) => void;
+  videoId?: string;
 }
 
-export function useSearch({ userId, initialQuery = "" }: UseSearchOptions = {}): UseSearchReturn {
+export function useSearch({ userId, initialQuery = "", videoId }: UseSearchOptions = {}): UseSearchReturn {
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<SearchResultItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -42,7 +44,6 @@ export function useSearch({ userId, initialQuery = "" }: UseSearchOptions = {}):
         if (!cancelled) setSuggestions(data.suggestions);
       })
       .catch(() => {
-        // Fallback suggestions if API is unreachable
         if (!cancelled) {
           setSuggestions([
             "person walking on the beach at sunset",
@@ -70,7 +71,6 @@ export function useSearch({ userId, initialQuery = "" }: UseSearchOptions = {}):
       const q = (overrideQuery ?? query).trim();
       if (!q || q.length < 2) return;
 
-      // Cancel any in-flight request
       if (abortRef.current) abortRef.current.abort();
       abortRef.current = new AbortController();
 
@@ -79,7 +79,7 @@ export function useSearch({ userId, initialQuery = "" }: UseSearchOptions = {}):
       setQuery(q);
 
       try {
-        const data: SearchResponse = await apiSearch(q, userId);
+        const data: SearchResponse = await apiSearch(q, userId, 10, videoId);
         setResults(data.results);
         setTotal(data.total);
         setTookMs(data.took_ms);
@@ -94,7 +94,7 @@ export function useSearch({ userId, initialQuery = "" }: UseSearchOptions = {}):
         setIsLoading(false);
       }
     },
-    [query, userId]
+    [query, userId, videoId]
   );
 
   const toggleFavorite = useCallback((sceneId: string, favorited: boolean) => {
@@ -117,5 +117,6 @@ export function useSearch({ userId, initialQuery = "" }: UseSearchOptions = {}):
     hasSearched,
     executeSearch,
     toggleFavorite,
+    videoId,
   };
 }

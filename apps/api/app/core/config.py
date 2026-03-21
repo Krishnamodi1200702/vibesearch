@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     # FAISS
     faiss_index_path: str = "./data/index/scenes.index"
 
+    # Uploads
+    upload_dir: str = "./data/uploads"
+    frames_dir: str = "./data/frames"
+    max_upload_mb: int = 100
+
     # Cloudinary (optional for MVP)
     cloudinary_cloud_name: str = ""
     cloudinary_api_key: str = ""

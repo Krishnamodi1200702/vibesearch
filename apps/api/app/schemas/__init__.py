@@ -26,20 +26,6 @@ class UserCreate(BaseModel):
     image: str | None = None
 
 
-# ── Videos ─────────────────────────────────────
-
-class VideoOut(BaseModel):
-    id: uuid.UUID
-    title: str
-    description: str | None = None
-    file_url: str
-    duration_seconds: float
-    status: str
-    created_at: datetime
-
-    model_config = {"from_attributes": True}
-
-
 # ── Scenes / Frames ───────────────────────────
 
 class SceneFrameOut(BaseModel):
@@ -64,11 +50,44 @@ class SceneOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# ── Videos ─────────────────────────────────────
+
+class VideoOut(BaseModel):
+    id: uuid.UUID
+    title: str
+    description: str | None = None
+    file_url: str
+    duration_seconds: float
+    scene_count: int = 0
+    status: str
+    processing_error: str | None = None
+    created_at: datetime
+    processed_at: datetime | None = None
+    thumbnail_url: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class VideoDetailOut(VideoOut):
+    """Extended video response with scenes included."""
+    scenes: list[SceneOut] = []
+
+    model_config = {"from_attributes": True}
+
+
+class VideoUploadResponse(BaseModel):
+    id: uuid.UUID
+    title: str
+    status: str
+    message: str
+
+
 # ── Search ─────────────────────────────────────
 
 class SearchRequest(BaseModel):
     query: str = Field(..., min_length=2, max_length=500)
     top_k: int = Field(default=10, ge=1, le=50)
+    video_id: uuid.UUID | None = None
 
 
 class SearchResultItem(BaseModel):
@@ -91,6 +110,15 @@ class SearchResponse(BaseModel):
     results: list[SearchResultItem]
     total: int
     took_ms: float
+
+
+class SearchHistoryItem(BaseModel):
+    id: uuid.UUID
+    query_text: str
+    result_count: int
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
 
 
 # ── Onboarding ─────────────────────────────────
@@ -116,3 +144,15 @@ class FavoriteOut(BaseModel):
 
 class FavoriteCreate(BaseModel):
     scene_id: uuid.UUID
+
+
+# ── Dashboard ──────────────────────────────────
+
+class DashboardStats(BaseModel):
+    total_videos: int
+    total_scenes: int
+    total_searches: int
+    total_favorites: int
+    videos_processing: int
+    recent_searches: list[SearchHistoryItem]
+    recent_videos: list[VideoOut]

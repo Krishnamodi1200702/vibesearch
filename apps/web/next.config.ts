@@ -8,8 +8,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "res.cloudinary.com" },
       { protocol: "https", hostname: "storage.googleapis.com" },
       {
-        protocol: "http",
-        hostname: "localhost",
+        protocol: "https",
+        hostname: "vibesearch-api.onrender.com",
         port: "8000",
         pathname: "/**",
       },
